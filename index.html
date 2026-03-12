@@ -51,18 +51,18 @@
             left: 0;
             width: 100%;
             display: flex;
-            flex-direction: column; /* Empilha verticalmente */
+            flex-direction: column; 
             justify-content: flex-start;
-            align-items: center; /* Centraliza horizontalmente */
+            align-items: center; 
             padding: 0 20px;
             box-sizing: border-box;
             z-index: 1000;
             pointer-events: none;
-            gap: 2px; /* Espaço entre número e nome */
+            gap: 2px; 
         }
 
         #photo-count {
-            font-size: 2.5rem; /* Número bem grande e em destaque */
+            font-size: 2.5rem; 
             font-weight: bold;
             color: #fff;
             text-shadow: 0 2px 8px rgba(0,0,0,0.8);
@@ -72,7 +72,7 @@
 
         #photo-name {
             font-size: 1rem;
-            color: #ccc; /* Cinza claro elegante */
+            color: #ccc; 
             font-weight: 500;
             max-width: 90vw;
             white-space: nowrap;
@@ -83,13 +83,13 @@
         }
 
         /* ---------------------------------------------------
-           CONTAINER DE CARTAS (FOTOS)
+           CONTAINER DE CARTAS (FOTOS E NAVEGAÇÃO)
            --------------------------------------------------- */
         #catalog-container { 
             position: relative; 
             width: 95vw; 
-            height: 62vh; 
-            margin-top: 5vh; 
+            height: 57vh; /* Reduzido em 5% para não sobrepor os botões base */
+            margin-top: 8vh; /* Empurrado um pouco para baixo do topo */
             display: none;
             transition: opacity 0.3s ease; 
         }
@@ -108,7 +108,6 @@
             align-items: center;
             justify-content: center;
             transition: transform 0.2s ease-out, opacity 0.2s ease-out; 
-            /* Visibilidade controlada via JS para não sobrepor */
         }
 
         .card img { 
@@ -121,6 +120,43 @@
             border-radius: 12px; 
             box-shadow: 0 5px 15px rgba(0,0,0,0.7);
         }
+
+        /* Zonas de Toque Laterais para Navegação */
+        .nav-zone {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 30%; /* Área clicável lateral bem generosa */
+            display: none; /* Só aparece quando tem foto */
+            align-items: center;
+            font-size: 2.5rem;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            z-index: 500000; /* Fica por cima da foto atual */
+            transition: color 0.2s ease, background 0.2s ease;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Gradientes sutis para indicar a área do botão */
+        #nav-left { 
+            left: 0; 
+            justify-content: flex-start; 
+            padding-left: 10px; 
+            background: linear-gradient(to right, rgba(0,0,0,0.4), transparent);
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+        #nav-right { 
+            right: 0; 
+            justify-content: flex-end; 
+            padding-right: 10px; 
+            background: linear-gradient(to left, rgba(0,0,0,0.4), transparent);
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+        
+        .nav-zone:hover { color: rgba(255, 255, 255, 0.9); }
+        .nav-zone:active { color: #fff; }
 
         /* ---------------------------------------------------
            LAYOUT INFERIOR (CONTROLES SÓLIDOS)
@@ -247,6 +283,9 @@
         <div id="end-screen">
             <div id="empty-message">A pasta está limpa!</div>
         </div>
+        
+        <div id="nav-left" class="nav-zone" onclick="prevPhoto()">&#10094;</div>
+        <div id="nav-right" class="nav-zone" onclick="nextPhoto()">&#10095;</div>
     </div>
 
     <div id="bottom-area">
@@ -305,12 +344,14 @@
 
         let nextPageToken = null;
         let isFetching = false;
-        let currentZIndex = 100000; 
         let undoZIndex = 200000; 
         
         const processedIds = new Set(); 
         let actionHistory = []; 
         let totalPhotosInFolder = 0; 
+        
+        // Novo controle de navegação
+        let currentViewIndex = 0;
 
         function gapiLoaded() { gapi.load('client', () => {
             gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] })
@@ -355,32 +396,67 @@
             }
         }
 
-        // --- NOVA FUNÇÃO DE VISIBILIDADE ---
-        // Garante que apenas a foto que está no topo fique visível na tela
-        function updateCardsVisibility() {
-            // Ignora os cards que já receberam a classe '.animating' (que estão saindo da tela)
-            const cards = Array.from(document.querySelectorAll('.card:not(.animating)'));
-            if(cards.length === 0) return;
-            
-            // Ordena pelo z-index para achar o card do topo
-            cards.sort((a, b) => parseInt(b.style.zIndex) - parseInt(a.style.zIndex));
-
-            // Deixa visível apenas o primeiro da lista, esconde os demais
-            cards.forEach((card, index) => {
-                card.style.visibility = (index === 0) ? 'visible' : 'hidden';
-            });
+        // --- SISTEMA DE VISIBILIDADE E NAVEGAÇÃO ---
+        function getVisibleCards() {
+            return Array.from(document.querySelectorAll('.card:not(.animating)'));
         }
 
-        function getTopCard() {
-            // Ignora imagens que estão no meio da animação de saída
-            const cards = Array.from(document.querySelectorAll('.card:not(.animating)'));
-            if(cards.length === 0) return null;
-            cards.sort((a, b) => parseInt(b.style.zIndex) - parseInt(a.style.zIndex));
-            return cards[0];
+        function getActiveCard() {
+            const cards = getVisibleCards();
+            return cards[currentViewIndex] || null;
+        }
+
+        function updateCardsVisibility() {
+            const cards = getVisibleCards();
+            const navLeft = document.getElementById('nav-left');
+            const navRight = document.getElementById('nav-right');
+
+            if(cards.length === 0) {
+                navLeft.style.display = 'none';
+                navRight.style.display = 'none';
+                return;
+            }
+            
+            // Garante que o índice não saia dos limites ao deletar fotos
+            if (currentViewIndex >= cards.length) currentViewIndex = Math.max(0, cards.length - 1);
+            if (currentViewIndex < 0) currentViewIndex = 0;
+
+            cards.forEach((card, index) => {
+                if (index === currentViewIndex) {
+                    card.style.visibility = 'visible';
+                    card.style.opacity = '1';
+                } else {
+                    card.style.visibility = 'hidden';
+                    card.style.opacity = '0';
+                }
+            });
+
+            // Atualiza botões laterais (só exibe se houver mais fotos para aquela direção)
+            navLeft.style.display = currentViewIndex > 0 ? 'flex' : 'none';
+            navRight.style.display = (currentViewIndex < cards.length - 1 || nextPageToken) ? 'flex' : 'none';
+
+            updateFilenameDisplay();
+        }
+
+        function prevPhoto() {
+            if (currentViewIndex > 0) {
+                currentViewIndex--;
+                updateCardsVisibility();
+            }
+        }
+
+        function nextPhoto() {
+            const cards = getVisibleCards();
+            if (currentViewIndex < cards.length - 1) {
+                currentViewIndex++;
+                updateCardsVisibility();
+            } else if (nextPageToken) {
+                listPhotos(); // Busca mais fotos se chegou no final e ainda há páginas
+            }
         }
 
         function updateFilenameDisplay() {
-            const topCard = getTopCard();
+            const topCard = getActiveCard();
             const nameEl = document.getElementById('photo-name');
             if (topCard) {
                 nameEl.innerText = topCard.dataset.fileName || "Sem título";
@@ -446,7 +522,7 @@
             const endScreen = document.getElementById('end-screen');
 
             if (!files || files.length === 0) { 
-                if (document.querySelectorAll('.card').length === 0) {
+                if (getVisibleCards().length === 0) {
                     endScreen.style.display = 'flex';
                     updateFilenameDisplay();
                 }
@@ -460,15 +536,14 @@
                 addedCount++;
 
                 const card = createCardElement(file.id, file.thumbnailLink.replace('=s220', '=s800'), file.name);
-                card.style.zIndex = currentZIndex--; 
+                // Não precisamos mais de Z-Index para organizar, pois controlamos via JS
                 container.appendChild(card);
             });
 
-            // Garante que só o card do topo fique visível e atualiza o nome
+            // Se for a primeira leva ou um 'next', garante a visibilidade certa
             updateCardsVisibility();
-            updateFilenameDisplay();
 
-            if (addedCount === 0 && document.querySelectorAll('.card').length === 0) {
+            if (addedCount === 0 && getVisibleCards().length === 0) {
                 if (nextPageToken) listPhotos();
                 else endScreen.style.display = 'flex';
             }
@@ -484,28 +559,27 @@
         }
 
         function handleGlobalAction(rating) {
-            const topCard = getTopCard();
-            if (!topCard) return;
-            const fileId = topCard.dataset.fileId;
-            const fileName = topCard.dataset.fileName;
+            const activeCard = getActiveCard();
+            if (!activeCard) return;
+            const fileId = activeCard.dataset.fileId;
+            const fileName = activeCard.dataset.fileName;
             
             let x = 0, y = 0;
             if (rating === 1) { x = -500; y = 100; } // Reject (Esquerda)
             else if (rating === 5) { x = 500; y = 100; } // Top (Direita)
             else if (rating === 3) { x = 500; y = 100; } // Manter (Também Direita)
             
-            animateOut(topCard, fileId, rating, x, y, fileName);
+            animateOut(activeCard, fileId, rating, x, y, fileName);
         }
 
         function animateOut(el, fileId, rating, x, y, fileName) {
-            el.classList.add('animating'); // Isola este card da lógica de visibilidade e topo
+            el.classList.add('animating'); // Remove do array visual instantaneamente
             el.style.transform = `translate(${x}px, ${y}px) rotate(${x/15}deg)`;
             el.style.opacity = '0';
             const imgUrl = el.querySelector('img').src;
             
-            // Revela imediatamente a próxima foto e atualiza o texto, sem esperar os 200ms
+            // Atualiza a visualização sem mexer no índice (a próxima foto sobe pra posição do índice atual automaticamente)
             updateCardsVisibility(); 
-            updateFilenameDisplay(); 
 
             setTimeout(() => {
                 el.remove();
@@ -549,20 +623,23 @@
             const container = document.getElementById('catalog-container');
             const card = createCardElement(lastAction.fileId, lastAction.imgUrl, lastAction.fileName);
             
-            card.style.zIndex = undoZIndex++; 
             card.style.transform = 'translateY(-100px) scale(0.9)'; 
             card.style.opacity = '0';
-            container.appendChild(card);
+            
+            // Insere a foto desfeita exatamente na posição que estávamos olhando
+            const activeCard = getActiveCard();
+            if (activeCard) {
+                container.insertBefore(card, activeCard);
+            } else {
+                container.appendChild(card);
+            }
 
-            // Assim que o card entra na pilha, ocultamos os de trás
             updateCardsVisibility();
 
             requestAnimationFrame(() => {
                 card.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease';
                 card.style.transform = 'translateY(0) scale(1)';
                 card.style.opacity = '1';
-                
-                setTimeout(updateFilenameDisplay, 300);
             });
         }
 
@@ -572,7 +649,7 @@
         }
 
         function checkAndFetchMore() {
-            const remainingCards = document.querySelectorAll('.card').length;
+            const remainingCards = getVisibleCards().length;
             if (remainingCards <= 50 && nextPageToken) listPhotos();
             else if (remainingCards === 0 && !nextPageToken) {
                 document.getElementById('end-screen').style.display = 'flex';
@@ -585,6 +662,7 @@
             container.querySelectorAll('.card').forEach(c => c.remove());
             
             nextPageToken = null; 
+            currentViewIndex = 0;
             processedIds.clear();
             actionHistory = []; 
             updateUndoButtonState();
