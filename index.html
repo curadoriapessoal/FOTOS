@@ -88,8 +88,8 @@
         #catalog-container { 
             position: relative; 
             width: 95vw; 
-            height: 57vh; /* Reduzido em 5% para não sobrepor os botões base */
-            margin-top: 8vh; /* Empurrado um pouco para baixo do topo */
+            height: 57vh; 
+            margin-top: 8vh; 
             display: none;
             transition: opacity 0.3s ease; 
         }
@@ -118,26 +118,25 @@
             object-fit: contain; 
             pointer-events: none;
             border-radius: 12px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.7);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.7); /* Vinheta reduzida */
         }
 
         /* Zonas de Toque Laterais para Navegação */
         .nav-zone {
             position: absolute;
             top: 0; bottom: 0;
-            width: 30%; /* Área clicável lateral bem generosa */
-            display: none; /* Só aparece quando tem foto */
+            width: 30%; 
+            display: none; 
             align-items: center;
             font-size: 2.5rem;
             color: rgba(255, 255, 255, 0.4);
             cursor: pointer;
-            z-index: 500000; /* Fica por cima da foto atual */
+            z-index: 500000; 
             transition: color 0.2s ease, background 0.2s ease;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Gradientes sutis para indicar a área do botão */
         #nav-left { 
             left: 0; 
             justify-content: flex-start; 
@@ -263,6 +262,10 @@
         .legend-content li { display: flex; align-items: center; gap: 15px; font-size: 0.9rem; color: #ccc; line-height: 1.4; }
         .legend-icon { font-size: 1.5rem; min-width: 30px; text-align: center; }
         .legend-action { font-weight: bold; color: #fff; display: block; margin-bottom: 2px;}
+        
+        /* Atalhos na Legenda */
+        .shortcut-badge { background: #333; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: auto; color: #aaa; border: 1px solid #555; }
+
         #close-legend { margin-top: 30px; width: 100%; background: #333; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
 
         #end-screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; display: none; flex-direction: column; align-items: center; gap: 20px; z-index: 0; }
@@ -309,21 +312,22 @@
         </div>
 
         <div id="legend-strip">
-            <button id="legend-btn" onclick="toggleLegend()">Legenda</button>
+            <button id="legend-btn" onclick="toggleLegend()">Legenda e Atalhos</button>
         </div>
     </div>
 
     <div id="legend-modal" onclick="if(event.target === this) toggleLegend()">
         <div class="legend-content">
-            <h2>Funções do Painel</h2>
+            <h2>Funções do Painel e Atalhos</h2>
             <ul>
-                <li><div class="legend-icon">↩</div><div><span class="legend-action">VOLTAR</span> Desfaz a última ação realizada.</div></li>
-                <li><div class="legend-icon">🔄</div><div><span class="legend-action">SINCRONIZAR</span> Sincroniza com o Drive e puxa novas fotos.</div></li>
-                <li><div class="legend-icon">🏴</div><div><span class="legend-action">REJECT</span> Move para a pasta de fotos rejeitadas.</div></li>
-                <li><div class="legend-icon">📁</div><div><span class="legend-action">MANTER</span> Move para a pasta Manter (avaliação posterior).</div></li>
-                <li><div class="legend-icon">🏳️</div><div><span class="legend-action">TOP</span> Move para a pasta TOP (melhores fotos).</div></li>
+                <li><div class="legend-icon">↩</div><div><span class="legend-action">VOLTAR</span> Desfaz a última ação.</div><div class="shortcut-badge">Tecla Q</div></li>
+                <li><div class="legend-icon">🔄</div><div><span class="legend-action">SINCRONIZAR</span> Puxa novas fotos.</div><div class="shortcut-badge">Tecla A</div></li>
+                <li><div class="legend-icon">🏴</div><div><span class="legend-action">REJECT</span> Move p/ rejeitadas.</div><div class="shortcut-badge">Tecla S</div></li>
+                <li><div class="legend-icon">📁</div><div><span class="legend-action">MANTER</span> Avaliação posterior.</div><div class="shortcut-badge">Tecla D</div></li>
+                <li><div class="legend-icon">🏳️</div><div><span class="legend-action">TOP</span> Melhores fotos.</div><div class="shortcut-badge">Tecla F</div></li>
+                <li><div class="legend-icon">&#10094;&#10095;</div><div><span class="legend-action">NAVEGAÇÃO</span> Alternar entre fotos.</div><div class="shortcut-badge">Setas</div></li>
             </ul>
-            <button id="close-legend" onclick="toggleLegend()">Fechar</button>
+            <button id="close-legend" onclick="toggleLegend()">Fechar (ESC)</button>
         </div>
     </div>
 
@@ -349,8 +353,6 @@
         const processedIds = new Set(); 
         let actionHistory = []; 
         let totalPhotosInFolder = 0; 
-        
-        // Novo controle de navegação
         let currentViewIndex = 0;
 
         function gapiLoaded() { gapi.load('client', () => {
@@ -396,6 +398,49 @@
             }
         }
 
+        // --- SISTEMA DE ATALHOS DE TECLADO ---
+        document.addEventListener('keydown', (event) => {
+            const modal = document.getElementById('legend-modal');
+            const isModalOpen = modal.style.display === 'flex';
+
+            if (isModalOpen) {
+                if (event.key === 'Escape') toggleLegend();
+                return; // Bloqueia outros comandos enquanto o modal estiver aberto
+            }
+
+            // Impede disparos múltiplos se o usuário segurar a tecla
+            if (event.repeat) return;
+
+            switch(event.key) {
+                case 'ArrowLeft':
+                    prevPhoto();
+                    break;
+                case 'ArrowRight':
+                    nextPhoto();
+                    break;
+                case 's':
+                case 'S':
+                    handleGlobalAction(1); // Reject
+                    break;
+                case 'd':
+                case 'D':
+                    handleGlobalAction(3); // Manter
+                    break;
+                case 'f':
+                case 'F':
+                    handleGlobalAction(5); // Top
+                    break;
+                case 'a':
+                case 'A':
+                    reloadFolder(); // Sincronizar
+                    break;
+                case 'q':
+                case 'Q':
+                    undoLastAction(); // Desfazer
+                    break;
+            }
+        });
+
         // --- SISTEMA DE VISIBILIDADE E NAVEGAÇÃO ---
         function getVisibleCards() {
             return Array.from(document.querySelectorAll('.card:not(.animating)'));
@@ -417,7 +462,6 @@
                 return;
             }
             
-            // Garante que o índice não saia dos limites ao deletar fotos
             if (currentViewIndex >= cards.length) currentViewIndex = Math.max(0, cards.length - 1);
             if (currentViewIndex < 0) currentViewIndex = 0;
 
@@ -431,7 +475,6 @@
                 }
             });
 
-            // Atualiza botões laterais (só exibe se houver mais fotos para aquela direção)
             navLeft.style.display = currentViewIndex > 0 ? 'flex' : 'none';
             navRight.style.display = (currentViewIndex < cards.length - 1 || nextPageToken) ? 'flex' : 'none';
 
@@ -451,7 +494,7 @@
                 currentViewIndex++;
                 updateCardsVisibility();
             } else if (nextPageToken) {
-                listPhotos(); // Busca mais fotos se chegou no final e ainda há páginas
+                listPhotos(); 
             }
         }
 
@@ -536,11 +579,9 @@
                 addedCount++;
 
                 const card = createCardElement(file.id, file.thumbnailLink.replace('=s220', '=s800'), file.name);
-                // Não precisamos mais de Z-Index para organizar, pois controlamos via JS
                 container.appendChild(card);
             });
 
-            // Se for a primeira leva ou um 'next', garante a visibilidade certa
             updateCardsVisibility();
 
             if (addedCount === 0 && getVisibleCards().length === 0) {
@@ -565,20 +606,19 @@
             const fileName = activeCard.dataset.fileName;
             
             let x = 0, y = 0;
-            if (rating === 1) { x = -500; y = 100; } // Reject (Esquerda)
-            else if (rating === 5) { x = 500; y = 100; } // Top (Direita)
-            else if (rating === 3) { x = 500; y = 100; } // Manter (Também Direita)
+            if (rating === 1) { x = -500; y = 100; } // Reject
+            else if (rating === 5) { x = 500; y = 100; } // Top
+            else if (rating === 3) { x = 500; y = 100; } // Manter
             
             animateOut(activeCard, fileId, rating, x, y, fileName);
         }
 
         function animateOut(el, fileId, rating, x, y, fileName) {
-            el.classList.add('animating'); // Remove do array visual instantaneamente
+            el.classList.add('animating'); 
             el.style.transform = `translate(${x}px, ${y}px) rotate(${x/15}deg)`;
             el.style.opacity = '0';
             const imgUrl = el.querySelector('img').src;
             
-            // Atualiza a visualização sem mexer no índice (a próxima foto sobe pra posição do índice atual automaticamente)
             updateCardsVisibility(); 
 
             setTimeout(() => {
@@ -626,7 +666,6 @@
             card.style.transform = 'translateY(-100px) scale(0.9)'; 
             card.style.opacity = '0';
             
-            // Insere a foto desfeita exatamente na posição que estávamos olhando
             const activeCard = getActiveCard();
             if (activeCard) {
                 container.insertBefore(card, activeCard);
