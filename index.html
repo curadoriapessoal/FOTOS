@@ -43,7 +43,7 @@
         }
 
         /* ---------------------------------------------------
-           CABEÇALHO (NOME DA FOTO E CONTADOR)
+           CABEÇALHO (NOME DA FOTO E CONTADOR CENTRALIZADOS)
            --------------------------------------------------- */
         #top-bar {
             position: fixed;
@@ -51,79 +51,77 @@
             left: 0;
             width: 100%;
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            flex-direction: column; /* Empilha verticalmente */
+            justify-content: flex-start;
+            align-items: center; /* Centraliza horizontalmente */
             padding: 0 20px;
             box-sizing: border-box;
             z-index: 1000;
-            pointer-events: none; /* Para não atrapalhar o toque na foto */
-        }
-
-        #photo-name {
-            font-size: 0.9rem;
-            color: #aaa;
-            font-weight: 500;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 5px 12px;
-            border-radius: 10px;
-            max-width: 55vw; /* Limita a largura para nomes enormes */
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis; /* Adiciona ... no fim se for grande */
-            display: none;
+            pointer-events: none;
+            gap: 2px; /* Espaço entre número e nome */
         }
 
         #photo-count {
-            font-size: 1.5rem;
+            font-size: 2.5rem; /* Número bem grande e em destaque */
             font-weight: bold;
             color: #fff;
-            text-shadow: 0 2px 5px rgba(0,0,0,1);
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
             display: none; 
+            line-height: 1;
+        }
+
+        #photo-name {
+            font-size: 1rem;
+            color: #ccc; /* Cinza claro elegante */
+            font-weight: 500;
+            max-width: 90vw;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: none;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
         }
 
         /* ---------------------------------------------------
            CONTAINER DE CARTAS (FOTOS)
            --------------------------------------------------- */
-        /* Container da Foto (Área Segura) */
         #catalog-container { 
             position: relative; 
-            width: 95vw; /* 95% da tela em celulares */
-            height: 62vh; /* Limita a altura a 62% da tela para não encostar nos botões */
-            margin-top: 2vh; /* Respiro em relação ao nome no topo */
+            width: 95vw; 
+            height: 62vh; 
+            margin-top: 5vh; 
             display: none;
             transition: opacity 0.3s ease; 
         }
 
-        /* Adaptação para Monitores (Desktop) */
         @media (min-width: 768px) {
-            #catalog-container {
-                width: 50vw; /* Limita a 50% da tela em monitores horizontais */
-            }
+            #catalog-container { width: 50vw; }
         }
 
         .card { 
             position: absolute; 
             width: 100%; 
             height: 100%; 
-            background: transparent; /* O fundo precisa ser transparente agora */
+            background: transparent; 
             display: flex; 
             flex-direction: column; 
             align-items: center;
             justify-content: center;
             transition: transform 0.2s ease-out, opacity 0.2s ease-out; 
-            /* Bordas e sombras foram transferidas para a imagem abaixo */
+            /* Visibilidade controlada via JS para não sobrepor */
         }
 
         .card img { 
-            max-width: 100%; /* Garante que não vaze na largura */
-            max-height: 100%; /* Garante que não vaze na altura */
+            max-width: 100%; 
+            max-height: 100%; 
             width: auto;
             height: auto;
-            object-fit: contain; /* Exibe a imagem inteira sem cortes */
+            object-fit: contain; 
             pointer-events: none;
-            border-radius: 12px; /* A borda agora abraça a proporção real da foto */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.9); /* A sombra acompanha a foto */
+            border-radius: 12px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.7);
         }
+
         /* ---------------------------------------------------
            LAYOUT INFERIOR (CONTROLES SÓLIDOS)
            --------------------------------------------------- */
@@ -161,7 +159,6 @@
             pointer-events: auto;
         }
 
-        /* Estilo Base Botões Sólidos e Elegantes */
         .solid-btn {
             background: rgba(255, 255, 255, 0.05); 
             backdrop-filter: blur(15px);
@@ -184,26 +181,17 @@
             transform: scale(0.96) translateY(2px);
         }
 
-        /* Botões Esquerda (Sincronizar e Voltar) */
         .btn-left-stack {
             width: 130px;
-            height: 46px; /* Altura ajustada para visual mais premium */
+            height: 46px; 
             border-radius: 12px;
             font-size: 0.8rem;
             letter-spacing: 0.5px;
         }
 
-        .btn-undo { 
-            border-color: rgba(255, 193, 7, 0.3); 
-            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.1);
-            visibility: hidden; 
-        }
-        .btn-sync { 
-            border-color: rgba(232, 62, 140, 0.3); 
-            box-shadow: 0 4px 15px rgba(232, 62, 140, 0.1);
-        }
+        .btn-undo { border-color: rgba(255, 193, 7, 0.3); box-shadow: 0 4px 15px rgba(255, 193, 7, 0.1); visibility: hidden; }
+        .btn-sync { border-color: rgba(232, 62, 140, 0.3); box-shadow: 0 4px 15px rgba(232, 62, 140, 0.1); }
 
-        /* Botões Direita (Altura total 46 + 12 + 46 = 104px para emparelhar com a esquerda) */
         .btn-right-action {
             width: 70px;
             height: 104px; 
@@ -218,89 +206,30 @@
         .btn-manter { border-color: rgba(13, 110, 253, 0.3); box-shadow: 0 4px 15px rgba(13, 110, 253, 0.1); }
         .btn-top    { border-color: rgba(40, 167, 69, 0.3); box-shadow: 0 4px 15px rgba(40, 167, 69, 0.1); }
 
-        /* Linha inferior (Botão Legenda) */
-        #legend-strip {
-            display: none; 
-            justify-content: center;
-            width: 100%;
-            pointer-events: none;
-        }
-
+        #legend-strip { display: none; justify-content: center; width: 100%; pointer-events: none; }
         #legend-btn {
-            background: #4b5563; 
-            border: none;
-            color: #fff;
-            padding: 10px 30px;
-            border-radius: 25px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 6px 0 #374151, 0 10px 15px rgba(0,0,0,0.5);
-            pointer-events: auto; 
-            touch-action: manipulation;
-            transition: all 0.1s ease;
-            text-transform: uppercase;
+            background: #4b5563; border: none; color: #fff; padding: 10px 30px; border-radius: 25px;
+            font-size: 0.8rem; font-weight: bold; cursor: pointer; box-shadow: 0 6px 0 #374151, 0 10px 15px rgba(0,0,0,0.5);
+            pointer-events: auto; touch-action: manipulation; transition: all 0.1s ease; text-transform: uppercase;
         }
-        #legend-btn:active {
-            transform: translateY(6px);
-            box-shadow: 0 0 0 #374151, 0 4px 6px rgba(0,0,0,0.5);
-        }
+        #legend-btn:active { transform: translateY(6px); box-shadow: 0 0 0 #374151, 0 4px 6px rgba(0,0,0,0.5); }
 
-        /* ---------------------------------------------------
-           MODAL DE LEGENDA
-           --------------------------------------------------- */
+        /* MODAL DE LEGENDA */
         #legend-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(5px);
-            z-index: 100000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            padding: 20px;
-            box-sizing: border-box;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); z-index: 100000;
+            display: none; align-items: center; justify-content: center; flex-direction: column;
+            padding: 20px; box-sizing: border-box; opacity: 0; transition: opacity 0.3s ease;
         }
-        
-        .legend-content {
-            background: #111;
-            border: 1px solid #333;
-            border-radius: 15px;
-            padding: 30px 20px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-        }
-
+        .legend-content { background: #111; border: 1px solid #333; border-radius: 15px; padding: 30px 20px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
         .legend-content h2 { margin-top: 0; text-align: center; color: #fff; font-size: 1.2rem; margin-bottom: 20px; }
         .legend-content ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 15px; }
         .legend-content li { display: flex; align-items: center; gap: 15px; font-size: 0.9rem; color: #ccc; line-height: 1.4; }
         .legend-icon { font-size: 1.5rem; min-width: 30px; text-align: center; }
         .legend-action { font-weight: bold; color: #fff; display: block; margin-bottom: 2px;}
+        #close-legend { margin-top: 30px; width: 100%; background: #333; color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
 
-        #close-legend {
-            margin-top: 30px;
-            width: 100%;
-            background: #333;
-            color: #fff;
-            border: none;
-            padding: 12px;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-
-        /* Fim / Vazio */
-        #end-screen {
-            position: absolute;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 100%;
-            display: none; flex-direction: column; align-items: center; gap: 20px; z-index: 0;
-        }
+        #end-screen { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; display: none; flex-direction: column; align-items: center; gap: 20px; z-index: 0; }
         #empty-message { font-size: 1.2rem; color: #888; text-align: center;}
 
     </style>
@@ -310,8 +239,8 @@
     <button id="auth_button" onclick="handleAuthClick()">ABRIR PASTA</button>
     
     <div id="top-bar">
-        <div id="photo-name"></div>
         <div id="photo-count">...</div>
+        <div id="photo-name"></div>
     </div>
 
     <div id="catalog-container">
@@ -349,26 +278,11 @@
         <div class="legend-content">
             <h2>Funções do Painel</h2>
             <ul>
-                <li>
-                    <div class="legend-icon">↩</div>
-                    <div><span class="legend-action">VOLTAR</span> Desfaz a última ação realizada.</div>
-                </li>
-                <li>
-                    <div class="legend-icon">🔄</div>
-                    <div><span class="legend-action">SINCRONIZAR</span> Sincroniza com o Drive e puxa novas fotos.</div>
-                </li>
-                <li>
-                    <div class="legend-icon">🏴</div>
-                    <div><span class="legend-action">REJECT</span> Move para a pasta de fotos rejeitadas.</div>
-                </li>
-                <li>
-                    <div class="legend-icon">📁</div>
-                    <div><span class="legend-action">MANTER</span> Move para a pasta Manter (avaliação posterior).</div>
-                </li>
-                <li>
-                    <div class="legend-icon">🏳️</div>
-                    <div><span class="legend-action">TOP</span> Move para a pasta TOP (melhores fotos).</div>
-                </li>
+                <li><div class="legend-icon">↩</div><div><span class="legend-action">VOLTAR</span> Desfaz a última ação realizada.</div></li>
+                <li><div class="legend-icon">🔄</div><div><span class="legend-action">SINCRONIZAR</span> Sincroniza com o Drive e puxa novas fotos.</div></li>
+                <li><div class="legend-icon">🏴</div><div><span class="legend-action">REJECT</span> Move para a pasta de fotos rejeitadas.</div></li>
+                <li><div class="legend-icon">📁</div><div><span class="legend-action">MANTER</span> Move para a pasta Manter (avaliação posterior).</div></li>
+                <li><div class="legend-icon">🏳️</div><div><span class="legend-action">TOP</span> Move para a pasta TOP (melhores fotos).</div></li>
             </ul>
             <button id="close-legend" onclick="toggleLegend()">Fechar</button>
         </div>
@@ -430,7 +344,6 @@
             tokenClient.requestAccessToken(); 
         }
 
-        // Sistema do Modal de Legenda
         function toggleLegend() {
             const modal = document.getElementById('legend-modal');
             if (modal.style.display === 'flex') {
@@ -442,7 +355,30 @@
             }
         }
 
-        // Atualização Dinâmica do Nome da Foto
+        // --- NOVA FUNÇÃO DE VISIBILIDADE ---
+        // Garante que apenas a foto que está no topo fique visível na tela
+        function updateCardsVisibility() {
+            // Ignora os cards que já receberam a classe '.animating' (que estão saindo da tela)
+            const cards = Array.from(document.querySelectorAll('.card:not(.animating)'));
+            if(cards.length === 0) return;
+            
+            // Ordena pelo z-index para achar o card do topo
+            cards.sort((a, b) => parseInt(b.style.zIndex) - parseInt(a.style.zIndex));
+
+            // Deixa visível apenas o primeiro da lista, esconde os demais
+            cards.forEach((card, index) => {
+                card.style.visibility = (index === 0) ? 'visible' : 'hidden';
+            });
+        }
+
+        function getTopCard() {
+            // Ignora imagens que estão no meio da animação de saída
+            const cards = Array.from(document.querySelectorAll('.card:not(.animating)'));
+            if(cards.length === 0) return null;
+            cards.sort((a, b) => parseInt(b.style.zIndex) - parseInt(a.style.zIndex));
+            return cards[0];
+        }
+
         function updateFilenameDisplay() {
             const topCard = getTopCard();
             const nameEl = document.getElementById('photo-name');
@@ -528,6 +464,8 @@
                 container.appendChild(card);
             });
 
+            // Garante que só o card do topo fique visível e atualiza o nome
+            updateCardsVisibility();
             updateFilenameDisplay();
 
             if (addedCount === 0 && document.querySelectorAll('.card').length === 0) {
@@ -540,16 +478,9 @@
             const card = document.createElement('div');
             card.className = 'card';
             card.dataset.fileId = fileId; 
-            card.dataset.fileName = fileName; // Salva o nome da foto no HTML
+            card.dataset.fileName = fileName; 
             card.innerHTML = `<img src="${imgUrl}">`;
             return card;
-        }
-
-        function getTopCard() {
-            const cards = Array.from(document.querySelectorAll('.card'));
-            if(cards.length === 0) return null;
-            cards.sort((a, b) => parseInt(b.style.zIndex) - parseInt(a.style.zIndex));
-            return cards[0];
         }
 
         function handleGlobalAction(rating) {
@@ -567,13 +498,17 @@
         }
 
         function animateOut(el, fileId, rating, x, y, fileName) {
+            el.classList.add('animating'); // Isola este card da lógica de visibilidade e topo
             el.style.transform = `translate(${x}px, ${y}px) rotate(${x/15}deg)`;
             el.style.opacity = '0';
             const imgUrl = el.querySelector('img').src;
             
+            // Revela imediatamente a próxima foto e atualiza o texto, sem esperar os 200ms
+            updateCardsVisibility(); 
+            updateFilenameDisplay(); 
+
             setTimeout(() => {
                 el.remove();
-                updateFilenameDisplay(); // Atualiza o nome imediatamente após a foto sumir
                 checkAndFetchMore();
             }, 200);
 
@@ -619,12 +554,14 @@
             card.style.opacity = '0';
             container.appendChild(card);
 
+            // Assim que o card entra na pilha, ocultamos os de trás
+            updateCardsVisibility();
+
             requestAnimationFrame(() => {
                 card.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease';
                 card.style.transform = 'translateY(0) scale(1)';
                 card.style.opacity = '1';
                 
-                // Aguarda a transição terminar para atualizar o nome no topo
                 setTimeout(updateFilenameDisplay, 300);
             });
         }
