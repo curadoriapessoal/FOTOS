@@ -121,6 +121,10 @@
            =================================================== */
         #info-bar { position: relative; width: 100%; display: flex; justify-content: center; align-items: baseline; padding: 6px 0 0; z-index: 1000; pointer-events: none; }
         #photo-count { font-family: var(--font-serif); font-size: 2.6rem; font-weight: 400; color: var(--text); display: none; letter-spacing: -1.5px; line-height: 1; }
+        
+        /* Nova classe para estilizar o "/ total" */
+        .count-total { font-family: var(--font-ui); font-size: 1.2rem; color: var(--text-dim); font-weight: 600; letter-spacing: 1px; margin-left: 2px; }
+        
         #filename-display { width: 100%; text-align: center; font-family: var(--font-mono); font-style: italic; font-size: 0.6rem; font-weight: 300; color: var(--text-muted); margin-top: 5px; min-height: 1rem; z-index: 1000; letter-spacing: 0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 16px; }
 
         /* ===================================================
@@ -247,8 +251,8 @@
     <div id="folder-nav">
         <button class="folder-tab active" id="tab-beauty" title="Mudar para Beauty (Tecla +)" onclick="changeFolder('BEAUTY')">Beauty</button>
         <button class="folder-tab" id="tab-book" title="Mudar para Book (Tecla +)" onclick="changeFolder('BOOK')">Book</button>
-        <button class="folder-tab" id="tab-manter" title="Mudar para Mantidas (Tecla +)" onclick="changeFolder('MANTER')">KEEP</button>
-        <button class="folder-tab" id="tab-top" title="Mudar para Melhores (Tecla +)" onclick="changeFolder('TOP')">BEST</button>
+        <button class="folder-tab" id="tab-manter" title="Mudar para Mantidas (Tecla +)" onclick="changeFolder('MANTER')">Mantidas</button>
+        <button class="folder-tab" id="tab-top" title="Mudar para Melhores (Tecla +)" onclick="changeFolder('TOP')">Melhores</button>
     </div>
     
     <div id="info-bar">
@@ -280,16 +284,16 @@
                     <span class="icon">🏴</span> <span class="btn-text">REJECT</span>
                 </button>
                 <button class="solid-btn btn-right-action btn-manter" title="Manter (Teclas: 5 ou D)" onclick="handleGlobalAction(3)">
-                    <span class="icon">✅</span> <span class="btn-text">KEEP</span>
+                    <span class="icon">✅</span> <span class="btn-text">MANTER</span>
                 </button>
-                <button class="solid-btn btn-right-action btn-top" title="Preferidas (Teclas: 6 ou F)" onclick="handleGlobalAction(5)">
-                    <span class="icon">⭐</span> <span class="btn-text">BEST</span>
+                <button class="solid-btn btn-right-action btn-top" title="Melhores (Teclas: 6 ou F)" onclick="handleGlobalAction(5)">
+                    <span class="icon">⭐</span> <span class="btn-text">TOP</span>
                 </button>
             </div>
         </div>
 
         <div id="hide-strip">
-            <button id="hide-btn" title="Esconder (Teclas: 0 ou X)" onclick="toggleControls()">HIDE</button>
+            <button id="hide-btn" title="Esconder (Teclas: 0 ou X)" onclick="toggleControls()">ESCONDER</button>
         </div>
     </div>
 
@@ -322,6 +326,7 @@
 
         let nextPageToken = null;
         let isFetching = false;
+        let isFetchingTotal = false;
         
         const processedIds = new Set(); 
         let actionHistory = []; 
@@ -423,6 +428,8 @@
             if(cards.length === 0) {
                 navLeft.style.display = 'none';
                 navRight.style.display = 'none';
+                updateFilenameDisplay();
+                updateCounterDisplay(); // Atualiza contador quando não há cartas
                 return;
             }
             
@@ -443,6 +450,7 @@
             navRight.style.display = (currentViewIndex < cards.length - 1 || nextPageToken) ? 'flex' : 'none';
 
             updateFilenameDisplay();
+            updateCounterDisplay(); // Atualiza o contador durante a navegação/mudança de tela
         }
 
         function prevPhoto() {
@@ -473,11 +481,12 @@
         }
 
         async function fetchTotalCount() {
+            isFetchingTotal = true;
             let count = 0;
             let pageToken = null;
             const query = `'${currentSourceFolderId}' in parents and mimeType contains 'image/' and trashed = false`;
             const countDisplay = document.getElementById('photo-count');
-            countDisplay.innerText = "...";
+            countDisplay.innerHTML = "...";
             
             try {
                 do {
@@ -493,12 +502,37 @@
                 } while (pageToken);
                 
                 totalPhotosInFolder = count;
+            } catch (e) { 
+                console.error("Erro ao contar:", e);
+            } finally {
+                isFetchingTotal = false;
                 updateCounterDisplay();
-            } catch (e) { countDisplay.innerText = "?"; }
+            }
         }
 
         function updateCounterDisplay() { 
-            document.getElementById('photo-count').innerText = totalPhotosInFolder; 
+            // Se ainda está calculando o total, mantém o "..."
+            if (isFetchingTotal) {
+                document.getElementById('photo-count').innerHTML = "...";
+                return;
+            }
+
+            // Se não há fotos na pasta
+            if (totalPhotosInFolder === 0) {
+                document.getElementById('photo-count').innerHTML = "0";
+                return;
+            }
+            
+            const cards = getVisibleCards();
+            let current = "..."; // fallback se estiver renderizando
+            
+            // A posição da foto atual na fila de não processadas é exatamente index + 1
+            if (cards.length > 0) {
+                current = currentViewIndex + 1;
+            }
+            
+            // Atualiza o contador usando o estilo especial para a segunda metade (/ Total)
+            document.getElementById('photo-count').innerHTML = `${current}<span class="count-total">/ ${totalPhotosInFolder}</span>`; 
         }
 
         async function listPhotos() {
@@ -636,7 +670,6 @@
             // Atualiza o contador se voltamos para a mesma pasta
             if (currentSourceFolderId === lastAction.sourceFolder) {
                 totalPhotosInFolder++;
-                updateCounterDisplay();
 
                 processedIds.delete(lastAction.fileId);
                 document.getElementById('end-screen').style.display = 'none';
@@ -686,9 +719,13 @@
             currentViewIndex = 0;
             processedIds.clear();
             actionHistory = []; 
+            totalPhotosInFolder = 0; 
+            
             updateUndoButtonState();
             
             document.getElementById('end-screen').style.display = 'none'; 
+            document.getElementById('photo-count').innerHTML = "..."; 
+            
             fetchTotalCount();
             listPhotos(); 
         }
