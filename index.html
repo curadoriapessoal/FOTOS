@@ -103,7 +103,7 @@
            =================================================== */
         #folder-nav {
             width: 100%; display: none; justify-content: center; align-items: center;
-            gap: 4px; padding: 8px 10px 2px; z-index: 1001; flex-wrap: nowrap; box-sizing: border-box;
+            gap: 4px; padding: 8px 10px 2px; z-index: 1001; flex-wrap: nowrap; overflow-x: auto; box-sizing: border-box;
         }
 
         .folder-tab {
@@ -192,7 +192,7 @@
         @media screen and (max-width: 950px) {
             body { padding-top: 1vh; }
             .btn-text { display: none !important; }
-            .folder-tab { font-size: 1.2rem !important; padding: 9px 12px !important; border-radius: var(--r-md) !important; }
+            .folder-tab { font-size: 1rem !important; padding: 9px 10px !important; border-radius: var(--r-md) !important; }
             #photo-count { font-size: 2rem; }
             .btn-left-stack, #undo_button { width: 54px !important; height: 54px !important; padding: 0 !important; border-radius: var(--r-md) !important; font-size: 1.3rem !important; gap: 0 !important; }
             .btn-right-action { height: 66px; flex-direction: column !important; gap: 0 !important; font-size: 0.58rem !important; }
@@ -245,8 +245,10 @@
     <button id="auth_button" onclick="handleAuthClick()">ABRIR PASTA</button>
     
     <div id="folder-nav">
-        <button class="folder-tab active" id="tab-beauty" onclick="changeFolder('BEAUTY')">Beauty</button>
-        <button class="folder-tab" id="tab-book" onclick="changeFolder('BOOK')">Book</button>
+        <button class="folder-tab active" id="tab-beauty" title="Mudar para Beauty (Tecla +)" onclick="changeFolder('BEAUTY')">Beauty</button>
+        <button class="folder-tab" id="tab-book" title="Mudar para Book (Tecla +)" onclick="changeFolder('BOOK')">Book</button>
+        <button class="folder-tab" id="tab-manter" title="Mudar para Mantidas (Tecla +)" onclick="changeFolder('MANTER')">KEEP</button>
+        <button class="folder-tab" id="tab-top" title="Mudar para Melhores (Tecla +)" onclick="changeFolder('TOP')">BEST</button>
     </div>
     
     <div id="info-bar">
@@ -259,35 +261,35 @@
             <div id="empty-message">A pasta está limpa!</div>
         </div>
         
-        <div id="nav-left" class="nav-zone" onclick="prevPhoto()">&#10094;</div>
-        <div id="nav-right" class="nav-zone" onclick="nextPhoto()">&#10095;</div>
+        <div id="nav-left" class="nav-zone" title="Navegar (Seta Esquerda)" onclick="prevPhoto()">&#10094;</div>
+        <div id="nav-right" class="nav-zone" title="Navegar (Seta Direita)" onclick="nextPhoto()">&#10095;</div>
     </div>
 
     <div id="bottom-area">
         <div id="controls-wrapper">
             <div id="undo-zone">
-                <button id="undo_button" class="solid-btn btn-left-stack btn-undo" onclick="undoLastAction()">↩ <span class="btn-text">Voltar</span></button>
+                <button id="undo_button" class="solid-btn btn-left-stack btn-undo" title="Desfazer Movimentação (Teclas: 1 ou A)" onclick="undoLastAction()">↩ <span class="btn-text">Voltar</span></button>
             </div>
 
             <div class="left-panel">
-                <button class="solid-btn btn-left-stack btn-sync" onclick="reloadFolder()">🔄 <span class="btn-text">Sync</span></button>
+                <button class="solid-btn btn-left-stack btn-sync" title="Sincronizar (Teclas: 3 ou G)" onclick="reloadFolder()">🔄 <span class="btn-text">Sync</span></button>
             </div>
             
             <div class="right-panel">
-                <button class="solid-btn btn-right-action btn-reject" onclick="handleGlobalAction(1)">
+                <button class="solid-btn btn-right-action btn-reject" title="Rejeitar (Teclas: 4 ou S)" onclick="handleGlobalAction(1)">
                     <span class="icon">🏴</span> <span class="btn-text">REJECT</span>
                 </button>
-                <button class="solid-btn btn-right-action btn-manter" onclick="handleGlobalAction(3)">
-                    <span class="icon">📁</span> <span class="btn-text">MANTER</span>
+                <button class="solid-btn btn-right-action btn-manter" title="Manter (Teclas: 5 ou D)" onclick="handleGlobalAction(3)">
+                    <span class="icon">✅</span> <span class="btn-text">KEEP</span>
                 </button>
-                <button class="solid-btn btn-right-action btn-top" onclick="handleGlobalAction(5)">
-                    <span class="icon">🏳️</span> <span class="btn-text">TOP</span>
+                <button class="solid-btn btn-right-action btn-top" title="Preferidas (Teclas: 6 ou F)" onclick="handleGlobalAction(5)">
+                    <span class="icon">⭐</span> <span class="btn-text">BEST</span>
                 </button>
             </div>
         </div>
 
         <div id="hide-strip">
-            <button id="hide-btn" onclick="toggleControls()">ESCONDER</button>
+            <button id="hide-btn" title="Esconder (Teclas: 0 ou X)" onclick="toggleControls()">HIDE</button>
         </div>
     </div>
 
@@ -298,13 +300,16 @@
         // --- MAPEAMENTO DAS PASTAS SOURCE ---
         const SOURCE_FOLDERS = {
             BEAUTY: '11VNMaaXCr2pR-0ispSvjn38AHq9VgsfP',
-            BOOK: '1szTtFyDUtVBCIWC-z-V4sts50HlAvG33'
+            BOOK: '1szTtFyDUtVBCIWC-z-V4sts50HlAvG33',
+            MANTER: '1edv5_Wz-ehpqNWa7joxCALyVce37iwxI', // Mesma ID do destino "Manter"
+            TOP: '12Z_2tnPrTNhqUztoMvM6mHt9EDhlVRfx'     // Mesma ID do destino "Top"
         };
+        const FOLDER_KEYS = ['BEAUTY', 'BOOK', 'MANTER', 'TOP'];
         
         // Pasta atual, inicia no Beauty
         let currentSourceFolderId = SOURCE_FOLDERS.BEAUTY;
 
-        // --- PASTAS DE DESTINO (Mantidas iguais para ambos) ---
+        // --- PASTAS DE DESTINO ---
         const FOLDER_DESTINATIONS = {
             1: '1-BjrThu-4UVnG3ceMR_cNYfmC2-IJVRV', // Reject
             3: '1edv5_Wz-ehpqNWa7joxCALyVce37iwxI', // Manter
@@ -340,16 +345,13 @@
 
         function handleAuthClick() {
             tokenClient.callback = async (resp) => {
-                // Esconde a tela inicial de Login
                 document.getElementById('auth_button').style.display = 'none';
                 document.getElementById('login-title').style.display = 'none';
                 
-                // Exibe os componentes principais
                 document.getElementById('folder-nav').style.display = 'flex';
                 document.getElementById('catalog-container').style.display = 'block';
                 document.getElementById('controls-wrapper').style.display = 'flex'; 
                 document.getElementById('hide-strip').style.display = 'flex'; 
-                
                 document.getElementById('photo-count').style.display = 'block'; 
                 
                 fetchTotalCount();
@@ -366,12 +368,18 @@
             currentSourceFolderId = SOURCE_FOLDERS[folderKey];
 
             // Atualiza o visual das abas
-            document.getElementById('tab-beauty').classList.remove('active');
-            document.getElementById('tab-book').classList.remove('active');
+            document.querySelectorAll('.folder-tab').forEach(tab => tab.classList.remove('active'));
             document.getElementById(`tab-${folderKey.toLowerCase()}`).classList.add('active');
 
             // Recarrega o conteúdo da nova pasta
             reloadFolder();
+        }
+
+        // --- FUNÇÃO PARA CICLAR PASTAS (Teclado +) ---
+        function cycleFolder() {
+            let currentIndex = FOLDER_KEYS.findIndex(key => SOURCE_FOLDERS[key] === currentSourceFolderId);
+            let nextIndex = (currentIndex + 1) % FOLDER_KEYS.length;
+            changeFolder(FOLDER_KEYS[nextIndex]);
         }
 
         function toggleControls() {
@@ -388,16 +396,18 @@
 
         // --- SISTEMA DE ATALHOS DE TECLADO ---
         document.addEventListener('keydown', (event) => {
-            if (event.repeat) return;
+            if (event.repeat) return; // Evita disparos múltiplos segurando a tecla
 
             switch(event.key) {
                 case 'ArrowLeft': prevPhoto(); break;
                 case 'ArrowRight': nextPhoto(); break;
-                case 's': case 'S': handleGlobalAction(1); break;
-                case 'd': case 'D': handleGlobalAction(3); break;
-                case 'f': case 'F': handleGlobalAction(5); break;
-                case 'a': case 'A': reloadFolder(); break;
-                case 'q': case 'Q': undoLastAction(); break;
+                case '4': case 's': case 'S': handleGlobalAction(1); break;
+                case '5': case 'd': case 'D': handleGlobalAction(3); break;
+                case '6': case 'f': case 'F': handleGlobalAction(5); break;
+                case '3': case 'g': case 'G': reloadFolder(); break;
+                case '1': case 'a': case 'A': undoLastAction(); break;
+                case '0': case 'x': case 'X': toggleControls(); break;
+                case '+': cycleFolder(); break;
             }
         });
 
@@ -583,10 +593,19 @@
             const newParent = FOLDER_DESTINATIONS[rating];
             const sourceFolderAtTimeOfAction = currentSourceFolderId;
 
+            // Evitar chamadas desnecessárias se estivermos mandando o arquivo para a mesma pasta que ele já está
+            if (sourceFolderAtTimeOfAction === newParent) {
+                actionHistory.push({ fileId: fileId, destination: newParent, sourceFolder: sourceFolderAtTimeOfAction, imgUrl: imgUrl, fileName: fileName, noOp: true });
+                updateUndoButtonState();
+                if (totalPhotosInFolder > 0) totalPhotosInFolder--;
+                updateCounterDisplay();
+                return;
+            }
+
             gapi.client.drive.files.update({
                 fileId: fileId, addParents: newParent, removeParents: sourceFolderAtTimeOfAction
             }).then(() => {
-                actionHistory.push({ fileId: fileId, destination: newParent, sourceFolder: sourceFolderAtTimeOfAction, imgUrl: imgUrl, fileName: fileName });
+                actionHistory.push({ fileId: fileId, destination: newParent, sourceFolder: sourceFolderAtTimeOfAction, imgUrl: imgUrl, fileName: fileName, noOp: false });
                 updateUndoButtonState();
                 
                 if (totalPhotosInFolder > 0) totalPhotosInFolder--;
@@ -602,23 +621,23 @@
             const lastAction = actionHistory.pop();
             updateUndoButtonState();
 
-            try {
-                await gapi.client.drive.files.update({
-                    fileId: lastAction.fileId, addParents: lastAction.sourceFolder, removeParents: lastAction.destination
-                });
-                
-                // Só incrementa o contador se estivermos na mesma pasta de onde a foto saiu
-                if (currentSourceFolderId === lastAction.sourceFolder) {
-                    totalPhotosInFolder++;
-                    updateCounterDisplay();
+            // Desfaz alteração na API do Drive (caso ela realmente tenha acontecido)
+            if (!lastAction.noOp) {
+                try {
+                    await gapi.client.drive.files.update({
+                        fileId: lastAction.fileId, addParents: lastAction.sourceFolder, removeParents: lastAction.destination
+                    });
+                } catch (e) {
+                    alert("Não foi possível devolver o arquivo para a origem no Drive.");
+                    return; 
                 }
-            } catch (e) {
-                alert("Não foi possível devolver o arquivo para a origem no Drive.");
-                return; 
             }
 
-            // Apenas adiciona de volta no visual se a pasta ativa for a mesma de onde a foto foi removida
+            // Atualiza o contador se voltamos para a mesma pasta
             if (currentSourceFolderId === lastAction.sourceFolder) {
+                totalPhotosInFolder++;
+                updateCounterDisplay();
+
                 processedIds.delete(lastAction.fileId);
                 document.getElementById('end-screen').style.display = 'none';
 
@@ -666,7 +685,7 @@
             nextPageToken = null; 
             currentViewIndex = 0;
             processedIds.clear();
-            actionHistory = []; // Limpa o histórico de "desfazer" ao trocar de pasta para evitar confusão visual
+            actionHistory = []; 
             updateUndoButtonState();
             
             document.getElementById('end-screen').style.display = 'none'; 
